@@ -1,6 +1,8 @@
-# Entra ID SCIM Provisioning (to scim.dev)
+# Entra ID SCIM Provisioning to scim.dev
 
-Hands-on lab, October 2026.
+Hands-on lab, October 2026 (done Oct 20).
+
+> **Status:** joiner (create) proven end to end. **Leaver (deactivate) is PARTIAL:** the disable is proven on the Entra side only. This is not an end-to-end deprovisioning demo.
 
 ## What this is and why it matters
 
@@ -15,7 +17,7 @@ This is how companies stop doing app accounts by hand: the identity provider bec
 | Identity provider | Microsoft Entra ID (lab tenant) |
 | Target app | **SCIM Playground** at [scim.dev](https://scim.dev) (free test server) |
 | Tenant URL | `https://api.scim.dev/scim/v2` |
-| Auth | Bearer token (scim.dev's public free playground key; masked in Entra) |
+| Auth | Bearer token (blacked out in screenshots; masked in Entra) |
 | Test user | Test User |
 
 ## Steps
@@ -52,16 +54,16 @@ All 4 steps succeeded, and Entra sent `emails[type eq "work"].value`, `userName`
 
 ### 7. Scope check: an unassigned user is skipped
 
-When Test User wasn't assigned to the app, Entra skipped them (`Assigned to the application: False`, `NotEffectivelyEntitled`). Only assigned users get accounts.
+When Test User wasn't assigned to the app, on-demand provisioning returned **Skipped** (`Assigned to the application: False`, `NotEffectivelyEntitled`). On-demand provisioning only handles assigned users.
 
 ![Unassigned skipped](screenshots/12-unassigned-skipped.png)
 ![Unassigned skipped details](screenshots/11-unassigned-skipped-details.png)
 
-### 8. Leaver: disable Test User in Entra
+### 8. Leaver (PARTIAL): disable Test User in Entra
 
 ![Test User disabled](screenshots/13-testuser-disabled.png)
 
-Provision on demand now shows `IsActive: False` while `Assigned to the application: True`, meaning "not active in the source system." Entra flags the user to be shut off in the app.
+Provision on demand now shows `IsActive: False` while `Assigned to the application: True` ("not active in the source system"). The result was **Skipped**, so this proves the disable on the Entra side. It does **not** show the account deactivated in the app.
 
 ![Leaver IsActive False](screenshots/14-leaver-isactive-false.png)
 
@@ -71,7 +73,7 @@ Provision on demand now shows `IsActive: False` while `Assigned to the applicati
 
 ## Honest note
 
-scim.dev's free playground resets its data, so I couldn't show the account flipped to inactive on the app side. The shut-off is shown on the Entra side instead (`IsActive False`, still assigned).
+The leaver step is **partial**. On-demand provisioning returned Skipped for the disabled user, and scim.dev's free playground resets its data, so the app-side deactivate is not shown. What is proven: the disable on the Entra side (`IsActive False`, still assigned). I'm not claiming end-to-end deprovisioning.
 
 ## Skills shown
 
@@ -82,5 +84,5 @@ scim.dev's free playground resets its data, so I couldn't show the account flipp
 
 ## Notes
 
-- App ID, object IDs, the provisioning job ID and the browser URL bar were blacked out in screenshots 03, 04, 05 and 13.
+- Blacked out in screenshots: app/object IDs, the provisioning job ID, browser URL bars, the scim.dev token, and the tenant name (account email and user names).
 - Lab tenant and test accounts only.
