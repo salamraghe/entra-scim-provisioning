@@ -1,88 +1,82 @@
 # Entra ID SCIM Provisioning to scim.dev
 
-Hands-on lab, October 2026 (done Oct 20).
+Hands-on lab, Oct 2026.
 
-> **Status:** joiner (create) proven end to end. **Leaver (deactivate) is PARTIAL:** the disable is proven on the Entra side only. This is not an end-to-end deprovisioning demo.
+> **Status:** joiner (create) proven end to end. **Leaver is partial:** the disable is proven on the Entra side only (`IsActive: False`, still assigned). App-side deactivation is **not** shown, because the scim.dev free playground resets its data.
 
-## What this is and why it matters
+A joiner ticket shouldn't mean someone hand-builds an account in every app. With SCIM, Entra ID is the source of truth: assign a user to an app and Entra creates the account there; disable them and Entra flags them to be shut off. I wired Entra to a free SCIM test server (scim.dev), provisioned Test User, hit a real error, fixed it, then ran the leaver side as far as the free playground allows.
 
-SCIM lets Entra create and turn off accounts in apps automatically. I connected an app to Entra, assigned Test User, and Entra created their account in the app by itself. It failed at first because the app needed an email and Test User didn't have one, so I added the email and retried. Then I disabled Test User in Entra, and Entra flagged them to be shut off in the app too.
+## What I built
 
-This is how companies stop doing app accounts by hand: the identity provider becomes the source of truth, so joiners get accounts and leavers lose them without someone remembering every app.
+- A non-gallery enterprise app, **SCIM Playground**, with SCIM provisioning (bearer token + tenant URL). Test connection passed.
+- Assigned Test User and ran **Provision on demand**. The first try failed (`emails` field required). I added an email to Test User, retried, and all four steps passed. The user was created in the app.
+- Scope check: an unassigned user is **Skipped** (`NotEffectivelyEntitled`).
+- Leaver: disabled Test User in Entra. Provision on demand then showed `IsActive: False` with `Assigned to the application: True`. Entra side only.
+
+## What I learned
+
+*Interview line (coach-written at his request, from his one-page IAM Labs doc):*
+
+> "SCIM lets Entra create and turn off accounts in apps automatically. I connected an app to Entra, assigned Test User, and Entra created their account in the app by itself. It failed at first because the app needed an email and Test User didn't have one, so I added the email and retried. Then I disabled Test User in Entra, and Entra flagged them to be shut off in the app too."
+
+The last sentence is proven only on the Entra side (IsActive False, still assigned); app-side deactivation is not shown.
+
+## Key screenshots
+
+![](key/01-scim-test-connection-success.png)
+*Entra connected to the scim.dev SCIM endpoint and the connection test passed.*
+
+![](key/02-testuser-assigned-to-app.png)
+*Assigned Test User to the SCIM Playground enterprise app for provisioning.*
+
+![](key/03-error-emails-required.png)
+*Error I hit: provisioning failed because the app requires an email attribute.*
+
+![](key/04-user-created-in-scim-app.png)
+*After adding the missing email to Test User, the user was created in the SCIM app.*
+
+![](key/05-provision-on-demand-success.png)
+*Provision on demand passed all four steps for Test User.*
+
+![](key/06-testuser-disabled-in-entra.png)
+*Leaver step: Test User account disabled in Entra ID.*
+
+![](key/07-leaver-active-false.png)
+*Entra marked the leaver inactive; app-side deactivation proven only on Entra's side.*
 
 ## Environment
 
 | Item | Value |
 | --- | --- |
 | Identity provider | Microsoft Entra ID (lab tenant) |
-| Target app | **SCIM Playground** at [scim.dev](https://scim.dev) (free test server) |
+| Target app | SCIM Playground at [scim.dev](https://scim.dev) (free test server) |
 | Tenant URL | `https://api.scim.dev/scim/v2` |
-| Auth | Bearer token (blacked out in screenshots; masked in Entra) |
+| Auth | Bearer token (blacked out / masked) |
 | Test user | Test User |
 
-## Steps
+## What broke / issues I fixed
 
-### 1. scim.dev free playground endpoint
+- **First provision failed at step 4 (Perform action):** `400 invalidSyntax: ...User:emails field is required`. Test User had no email. I added one and retried, and the user was created.
 
-![scim.dev endpoint](screenshots/01-scim-dev-endpoint.png)
+## Gaps
 
-### 2. Create a non-gallery enterprise app: "SCIM Playground"
+- **App-side deactivation is not shown.** The leaver run returned Skipped, and scim.dev's free playground resets its data. Proven: the disable on the Entra side only (`IsActive: False`, still assigned). This is not an end-to-end deprovisioning demo.
+- Blacked out in screenshots: tenant name, account email/UPNs, app/object/job IDs, URL bars, and the scim.dev token.
 
-![Create non-gallery app](screenshots/02-create-nongallery-app.png)
-![App overview](screenshots/03-app-overview.png)
+<details><summary>Full proof (all screenshots)</summary>
 
-### 3. Provisioning: Bearer auth + tenant URL, test connection succeeded
+![](full-proof/01-scim-dev-endpoint.png)
 
-![Test connection success](screenshots/04-test-connection-success.png)
-![Provisioning overview](screenshots/05-provisioning-overview.png)
+![](full-proof/02-create-nongallery-app.png)
 
-### 4. Assign Test User to the app
+![](full-proof/03-app-overview.png)
 
-![Test User assigned](screenshots/06-testuser-assigned.png)
+![](full-proof/05-provisioning-overview.png)
 
-### 5. Provision on demand: first try failed (see "What broke")
+![](full-proof/08-provision-failed-step4.png)
 
-![Failed at step 4](screenshots/08-provision-failed-step4.png)
-![Error: emails required](screenshots/07-error-emails-required.png)
+![](full-proof/12-unassigned-skipped.png)
 
-### 6. Retry after adding the email: user created in the app
+![](full-proof/11-unassigned-skipped-details.png)
 
-All 4 steps succeeded, and Entra sent `emails[type eq "work"].value`, `userName`, `name`, `active = True` and `externalId`.
-
-![User created, attributes](screenshots/09-user-created-attributes.png)
-![All steps success](screenshots/10-provision-all-success.png)
-
-### 7. Scope check: an unassigned user is skipped
-
-When Test User wasn't assigned to the app, on-demand provisioning returned **Skipped** (`Assigned to the application: False`, `NotEffectivelyEntitled`). On-demand provisioning only handles assigned users.
-
-![Unassigned skipped](screenshots/12-unassigned-skipped.png)
-![Unassigned skipped details](screenshots/11-unassigned-skipped-details.png)
-
-### 8. Leaver (PARTIAL): disable Test User in Entra
-
-![Test User disabled](screenshots/13-testuser-disabled.png)
-
-Provision on demand now shows `IsActive: False` while `Assigned to the application: True` ("not active in the source system"). The result was **Skipped**, so this proves the disable on the Entra side. It does **not** show the account deactivated in the app.
-
-![Leaver IsActive False](screenshots/14-leaver-isactive-false.png)
-
-## What broke and how I fixed it
-
-- **First provision failed at step 4 (Perform action):** `400 invalidSyntax: urn:ietf:params:scim:schemas:core:2.0:User:emails field is required`. The app required an email and Test User didn't have one. I added the email to Test User and retried, and the user was created.
-
-## Honest note
-
-The leaver step is **partial**. On-demand provisioning returned Skipped for the disabled user, and scim.dev's free playground resets its data, so the app-side deactivate is not shown. What is proven: the disable on the Entra side (`IsActive False`, still assigned). I'm not claiming end-to-end deprovisioning.
-
-## Skills shown
-
-- **IAM Support:** assigning users to apps, reading provisioning errors, fixing user attributes and retrying
-- **IAM Engineer:** setting up SCIM 2.0 provisioning from Entra ID to a non-gallery app (tenant URL, bearer token, attribute mappings, scoping)
-- **Lifecycle / least privilege:** automatic joiner (create) and leaver (disable) driven by the identity provider
-- Honest evidence: showing what was proven and what the test platform couldn't show
-
-## Notes
-
-- Blacked out in screenshots: app/object IDs, the provisioning job ID, browser URL bars, the scim.dev token, and the tenant name (account email and user names).
-- Lab tenant and test accounts only.
+</details>
