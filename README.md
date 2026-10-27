@@ -15,7 +15,7 @@ A joiner ticket shouldn't mean someone hand-builds an account in every app. With
 
 ## What I learned
 
-*Interview line (coach-written at his request, from his one-page IAM Labs doc):*
+*Interview line:*
 
 > "SCIM lets Entra create and turn off accounts in apps automatically. I connected an app to Entra, assigned Test User, and Entra created their account in the app by itself. It failed at first because the app needed an email and Test User didn't have one, so I added the email and retried. Then I disabled Test User in Entra, and Entra flagged them to be shut off in the app too."
 
